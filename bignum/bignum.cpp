@@ -67,37 +67,34 @@ class bignum{
     }
   }
 
-  bool isGreater (bignum big, bignum small) {//true if big > small
+  bool isGreater (bignum big, bignum small) {//true if big >= small
     int i = big.length, j = small.length;
-    if (i > j)
-      return true;
-    else if (i < j)
-      return false;
+    if (i!= j)
+      return (i > j);
     else {
       assert(i == j);
       int k = 0;
       while( k < i) {
-        if (big.data[k] > small.data[k])
-          return true;
-        else if (big.data[k] < small.data[k])
-          return false;
+        if (big.data[k] != small.data[k])
+          return (big.data[k] > small.data[k]);
         assert(big.data[k] == small.data[k]);
         k++;
       }
     }
-    return false;
+    //return true if both are equal
+    return true;
   }
 
   bool sub (bignum one, bignum two, bignum* result) {
     //Return true if one is greater than two otherwise false
-    if (isGreater(two, one)) {
+    bool temp_bool = isGreater(one, two);
+    if (!temp_bool) {
       sub(two, one, result);
       return false;
     }
     assert(isGreater(one, two));
     int diff = 0, borrow = 0, i = one.length - 1, j = two.length - 1, last = MAXLEN - 1;
     char temp[MAXLEN];
-          bool temp_bool = false;
 
     while (j >= 0) {
       diff = int(one.data[i--]) - int(two.data[j--]) + borrow;
@@ -117,9 +114,11 @@ class bignum{
         }
       temp[last--] = diff + '0';
     }
-    //working fine, need to check case of borrow>0??
-    //removing all the preceding zeros
-    while ((last < MAXLEN-1) && (temp[last+1]) == '0') {
+    /*working fine, need to check case of borrow>0??
+    * removing all the preceding zeros except the case 
+    * when answer is 0, thus MAXLEN - 2.
+    */ 
+    while ((last < MAXLEN-2) && (temp[last+1]) == '0') {
       last++;
     }
     
@@ -127,7 +126,7 @@ class bignum{
     for (int i = 0; i< result->length; i++) {
       result->data[i] = temp[i+last+1];
     }
-     return false;
+     return true;
   }
 
   void multiply (bignum one, bignum two, bignum* result) {
@@ -153,7 +152,7 @@ bool isValid(const char s[]) {
 
 int main(){
   bignum one,two,sum, diff;
-  one.make_bignum("100000", &one);
+  one.make_bignum("99999", &one);
   two.make_bignum("99999", &two);
   sum.add(one, two, &sum);
   diff.sub(one, two, &diff);
