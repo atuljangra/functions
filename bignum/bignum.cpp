@@ -128,7 +128,8 @@ class bignum{
     }
      return true;
   }
-
+  
+  //Incomplete
   void multiply (bignum one, bignum two, bignum* result) {
     //Maximum possible length of result
     result->length = one.length + two.length;  
@@ -160,4 +161,7 @@ int main(){
   two.print_num(two);
   sum.print_num(sum);
   diff.print_num(diff);
+  diff.print_num(diff);
+
+
 }

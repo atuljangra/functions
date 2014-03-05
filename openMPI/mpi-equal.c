@@ -1,11 +1,13 @@
-// CSc 522
-// MPI matrix multiplication example
-
+/* This is more of a hello Mpi type of program.
+ * I allocate and initialize array A, 
+ * and then I store row wise sum in array B using normal data distribution.
+ * Caution: Untested code.
+ */
 #include <mpi.h>
 #include <stdio.h>
 #include <stdlib.h>
 
-#define TAG 13
+#define TAG 1024
 
 int main(int argc, char *argv[]) {
   float **A, **B, **C, *tmp;
@@ -52,7 +54,7 @@ int main(int argc, char *argv[]) {
     // initialize A
     for (i=0; i<N; i++) {
       for (j=0; j<N; j++) {
-        A[i][j] = i + j;
+        A[i][j] = N;
         }
     }
   }
