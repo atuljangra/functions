@@ -25,6 +25,7 @@ int main( int argc, char *argv[]){
   float a, b, c, d, e;
   int myrank, nprocs;
   float *A = NULL;
+  int i, j, pi, pj, k, offset, tag, dest;
   MPI_Status status;
   
   MPI_Init(&argc, &argv);
@@ -67,6 +68,9 @@ int main( int argc, char *argv[]){
     MPI_Finalize();
     exit(FAILURE);
   }
+
+  if(myrank == 0)
+    readMatrix(infile,A,m,n);
     
   /* TODO:- Well more of a note.
    * One way i'm trying to do this part is for every thread to have
@@ -84,60 +88,36 @@ int main( int argc, char *argv[]){
    * for the sake of us having very small time left went with this 
    * approach.
    */
-
-  /************************ Leader thread**************************/
-  if(myrank == 0){
-    readMatrix(infile,A,m,n);
-    
-    /*Send the data to all the worker threads in block cyclic fashion.*/
-    int i, j, pi, pj, k, offset, dest, tag;
-    
-    /*Iterate over all the matrix block by block and send the data.*/
-    for(i=0; i<m; i+=s){
-      for(j=0; j<n; j+=s){
-        
-        pi = (i/s)%p ; // Row number inside the processors grid.
-        pj = (j/s)%q ; // Coulmn number inside the processors grid.
-        dest = (pi*q + pj) ; // Rank of the processor where we want to send.
-        tag = myrank; // Tag the data with rank of the leader i.e. 0.
-        
-        //printf("Dest is %d\n",dest);
-        if(dest != myrank){
-          /*Send the data if this part does not belongs to me.*/
-          for(k=i; k<i+s; k++){
-            offset = k*n+j;
-            MPI_Send( A+offset, s, MPI_FLOAT, dest, tag, MPI_COMM_WORLD);
-          }
+      
+  /*Iterate over all the matrix block by block and receive the data.*/
+  for(i=0; i<m; i+=s){
+    for(j=0; j<n; j+=s){
+      
+      pi = (i/s)%p ; // Row number inside the processors grid.
+      pj = (j/s)%q ; // Coulmn number inside the processors grid.
+      dest = (pi*q + pj) ; // Rank of the processor where the data belongs.
+      
+      /************************ Leader thread**************************/
+      if(dest != myrank && myrank == 0){
+        /*Send the data if this part does not belongs to me.*/
+        for(k=i; k<i+s; k++){
+          offset = k*n+j;
+          tag = myrank;
+          MPI_Send( A+offset, s, MPI_FLOAT, dest, tag, MPI_COMM_WORLD);
+        }
+      }
+      /************************ Worker thread**************************/ 
+      if(dest == myrank && myrank != 0){
+        /*Recv the data if this part belongs to me.*/
+        for(k=i; k<i+s; k++){
+          offset = k*n+j;
+          tag = 0;
+          MPI_Recv( A+offset, s, MPI_FLOAT, 0 , tag, MPI_COMM_WORLD, &status);
         }
       }
     }
   }
-  /************************ Worker thread**************************/
-  if(myrank > 0){
-    
-    /*Receive the data from the leader thread in block cyclic fashion.*/
-    int i, j, pi, pj, k, offset, tag, dest;
-    
-    /*Iterate over all the matrix block by block and receive the data.*/
-    for(i=0; i<m; i+=s){
-      for(j=0; j<n; j+=s){
-        
-        pi = (i/s)%p ; // Row number inside the processors grid.
-        pj = (j/s)%q ; // Coulmn number inside the processors grid.
-        dest = (pi*q + pj) ; // Rank of the processor where the data belongs.
-        tag = 0; // Receiving the data from the leader processor.
-        
-        if(dest == myrank){
-          /*Recv the data if this part belongs to me.*/
-          for(k=i; k<i+s; k++){
-            offset = k*n+j;
-            MPI_Recv( A+offset, s, MPI_FLOAT, 0 , tag, MPI_COMM_WORLD, &status);
-          }
-        }
-      }
-    }
-  }
-
+  
 /* TODO: Remove this before submitting.*/
 /* Uncomment to see the block cyclic distribution of the matrix.*/
 /*
@@ -156,7 +136,7 @@ int main( int argc, char *argv[]){
         }
         MPI_Barrier(MPI_COMM_WORLD);
   }
-* /
+*/
 
   /*Perform l iterations of averaging*/
   while( (l--)>0 ){
