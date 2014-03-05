@@ -157,6 +157,7 @@ int main( int argc, char *argv[]){
             if (myrank != dest)
                 continue;
             for (int k = i; k < i + s; k++) {
+                assert(myrank == dest);
                 for (int kiter = j; kiter < j + s; kiter ++) {
                     A[k*n + kiter] = pow(2, myrank);  
                 }
@@ -166,23 +167,21 @@ int main( int argc, char *argv[]){
         }
     }
   }
-/* In case we want to see data after computation.  
-  
-    for (int i=0; i<nprocs; i++) {
-        if (i == myrank) {
-            std::cout << "Task " << myrank << std::endl ;
-            printf("\nMy Matrix A:- \n");
-            for (int j=0; j<m; j++) {
+/* In case we want to see data after computation.
+  for (int i=0; i<nprocs; i++) {
+      if (i == myrank) {
+          std::cout << "Task " << myrank << std::endl ;
+          printf("\nMy Matrix A:- \n");
+          for (int j=0; j<m; j++) {
               printf("\t| ");
               for (int k=0; k<n; k++)
-                printf("%.2f ", A[j*n+k]);
+                  printf("%.2f ", A[j*n+k]);
               printf("|\n");
             }
             printf("\n");
-        }
-        MPI_Barrier(MPI_COMM_WORLD);
+      }
+      MPI_Barrier(MPI_COMM_WORLD);
   } 
-
 */
 
   /*                 
@@ -190,22 +189,21 @@ int main( int argc, char *argv[]){
    */
   for (int i = 0; i < n; i+=s) {
       for (int j = 0; j < m; j+=s) {
-          pi = (i/s)%p; 
-          pj = (j/s)%q; 
+          pi = (i/s) % p; 
+          pj = (j/s) % q; 
           owner = (pi*q + pj);
-          
           // If I have this block and I'm not the master(All Hail Master!), 
           // this I will be sending this to master.
           if (myrank == owner && myrank != 0)
               for (int k = i; k < i + s; k++) {
                 offset = k*n+j;
-                // printf("Sending by rank: %d offset: %d \n", myrank, offset);
                 MPI_Send( A+offset, s, MPI_FLOAT, 0, tag, MPI_COMM_WORLD);
-            } 
+              }
+
+          /**** Master thread will gather all the data *****/
           if (myrank == 0 && myrank != owner)
               for (int k = i; k < i + s; k++) {
                 offset = k*n + j;
-                // printf("Receiving by rank %d offset %d \n", myrank, offset);
                 MPI_Recv( A+offset, s, MPI_FLOAT, owner , tag, MPI_COMM_WORLD, &status);  
               }
       }   
