@@ -31,6 +31,7 @@ function run
   if [ "$?" -ne "0" ] 
   then  
     $ECHO "Problems encountered while compiling"
+    exit 1
   else
     $ECHO "Executing the program"
     $ECHO "Arguments - "

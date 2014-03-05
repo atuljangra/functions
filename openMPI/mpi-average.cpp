@@ -115,6 +115,7 @@ int main( int argc, char *argv[]){
     if(myrank == 0)
       printf("Iteration number %d\n",l+1);
       
+    tag = COMPUTE;
     for(i=0; i<m; i+=s){
       for(j=0; j<n; j+=s){
         
@@ -122,78 +123,184 @@ int main( int argc, char *argv[]){
         pj = (j/s) % q ; // Coulmn number inside the processors grid.
         owner = (pi*q + pj) ; // Rank of the processor where the data belongs.
         
-        /* Recv data from left processor, Send to the right.*/  
-        
-        temp_pi = pi;
-        temp_pj = ((j+s)/s) % q ;
-        temp_dest = (temp_pi*q + temp_pj);
-                
+        /* Recv data from left processor, Send to the right.*/
         if(owner == myrank){
-
-        printf("SECOND Dest is %d, myrank is %d, j is %d, i is %d\n",dest,myrank,j,i);
+          
+          temp_pi = pi;
         
           if( j-s < 0 ){ // leftmost processor
+            temp_pj = ((j+s)/s) % q ;
+            temp_dest = (temp_pi*q + temp_pj);
             
-            printf("\t1 Task %d, j %d, Dest %d, temp-dest %d SENDING\n",myrank,j,dest,temp_dest);
             for(k=i; k<i+s; k++){
               offset = k*n+j+s-1;
-              tag = COMPUTE;
-              MPI_Ssend( A+offset, 1, MPI_FLOAT, temp_dest, tag, MPI_COMM_WORLD);
-              printf(" 1 sent succesfully\n");
+              MPI_Send( A+offset, 1, MPI_FLOAT, temp_dest, tag, MPI_COMM_WORLD);
             }
           }
           else if( j+s > n-1 ){ //rightmost processor
             temp_pj = ((j-s)/s)%q ;
             temp_dest = (temp_pi*q + temp_pj);
 
-            printf("\t4 Task %d, j %d, Dest %d, temp-dest %d RECVING\n",myrank,j,dest,temp_dest);
             for(k=i; k<i+s; k++){
               offset = k*n+j-1;
-              tag = COMPUTE;
               MPI_Recv( A+offset, 1, MPI_FLOAT, temp_dest , tag, MPI_COMM_WORLD, &status);
-              printf(" 4 recv succesfully\n");
             }
           }
-          else  { // if (j-s >= 0 && j+s <= n-1) {
+          else  { 
             temp_pj = ((j-s)/s)%q ;
             temp_dest = (temp_pi*q + temp_pj);
             
-            printf("\t2 Task %d,j %d, Dest %d, temp-dest %d RECVING\n",myrank,j,dest,temp_dest);
             for(k=i; k<i+s; k++){
               offset = k*n+j-1;
-              tag = COMPUTE;
               MPI_Recv( A+offset, 1, MPI_FLOAT, temp_dest , tag, MPI_COMM_WORLD, &status );
-              printf("2 recv succesfully\n");
             }
 
             temp_pj = ((j+s)/s)%q ;
             temp_dest = (temp_pi*q + temp_pj);
             
-            printf("\t3 Task %d, j %d, Dest %d, temp-dest %d RECVING\n",myrank,j,dest,temp_dest);
             for(k=i; k<i+s; k++){
               offset = k*n+j+s-1;
-              tag = COMPUTE;
-              MPI_Ssend( A+offset, 1, MPI_FLOAT, temp_dest, tag, MPI_COMM_WORLD);
-              printf("3 sent succesfully\n");
+              MPI_Send( A+offset, 1, MPI_FLOAT, temp_dest, tag, MPI_COMM_WORLD);
             }
           }
-          
+                
           /* Recv data from the right processor, Send to the left one.*/
+          temp_pi = pi;
+        
+          if( j+s > n-1 ){ //rightmost processor
+            temp_pj = ((j-s)/s)%q ;
+            temp_dest = (temp_pi*q + temp_pj);
+            
+            for(k=i; k<i+s; k++){
+            offset = k*n+j;
+              MPI_Send( A+offset, 1, MPI_FLOAT, temp_dest , tag, MPI_COMM_WORLD);
+            }
+          }
+          else if( j-s < 0 ){ // leftmost processor
+            temp_pj = ((j+s)/s) % q ;
+            temp_dest = (temp_pi*q + temp_pj);
+            
+            for(k=i; k<i+s; k++){
+              offset = k*n+j+s;
+              MPI_Recv( A+offset, 1, MPI_FLOAT, temp_dest, tag, MPI_COMM_WORLD, &status);
+            }
+          }
+          else  {
 
-          /* Recv data from the upper processor, Send to the lower one.*/
-          
-          /* Recv data from the lower processor, Send to the upper one.*/
+            temp_pj = ((j-s)/s)%q ;
+            temp_dest = (temp_pi*q + temp_pj);
+            
+            for(k=i; k<i+s; k++){
+              offset = k*n+j;
+              MPI_Send( A+offset, 1, MPI_FLOAT, temp_dest, tag, MPI_COMM_WORLD);
+            }
+            
+            temp_pj = ((j+s)/s)%q ;
+            temp_dest = (temp_pi*q + temp_pj);
+            
+            for(k=i; k<i+s; k++){
+              offset = k*n+j+s;
+              MPI_Recv( A+offset, 1, MPI_FLOAT, temp_dest , tag, MPI_COMM_WORLD, &status );
+            }
+          }
         }
       }
     }
     
-    /*Perform the  computation here.*/
+    for(j=0; j<n; j+=s){
+      for(i=0; i<m; i+=s){
 
+        pi = (i/s) % p ; // Row number inside the processors grid.
+        pj = (j/s) % q ; // Coulmn number inside the processors grid.
+        owner = (pi*q + pj) ; // Rank of the processor where the data belongs.
+        
+        if(myrank == owner){
+          /* Recv data from the upper processor, Send to the lower one.*/
+          temp_pj = pj;
+          
+          if( i-s < 0 ){ // uppermost processor
+            temp_pi = ((i+s)/s) % q ;
+            temp_dest = (temp_pi*q + temp_pj);
+            printf("\t1 Task %d, i %d,j %d Dest %d, temp-dest %d SENDING\n",myrank,i,j,dest,temp_dest);
+            offset = (i+s-1)*n+j;
+            MPI_Ssend( A+offset, s, MPI_FLOAT, temp_dest, tag, MPI_COMM_WORLD);
+            printf(" 1 sent succesfully\n");
+          }
+          else if( i+s > m-1 ){ //lowermost processor
+            temp_pi = ((i-s)/s)%q ;
+            temp_dest = (temp_pi*q + temp_pj);
+
+            printf("\t4 Task %d, i %d,j %d Dest %d, temp-dest %d RECVING\n",myrank,i,j,dest,temp_dest);
+            offset = (i-1)*n+j;
+            tag = COMPUTE;
+            MPI_Recv( A+offset, s, MPI_FLOAT, temp_dest , tag, MPI_COMM_WORLD, &status);
+            printf(" 4 recv succesfully\n");
+          }
+          else  {
+            temp_pi = ((i-s)/s)%q ;
+            temp_dest = (temp_pi*q + temp_pj);
+            
+            printf("\t2 Task %d, i %d,j %d Dest %d, temp-dest %d RECVING\n",myrank,i,j,dest,temp_dest);
+            offset = (i-1)*n+j;
+            MPI_Recv( A+offset, s, MPI_FLOAT, temp_dest , tag, MPI_COMM_WORLD, &status );
+            printf("2 recv succesfully\n");
+            
+            temp_pi = ((i+s)/s)%q ;
+            temp_dest = (temp_pi*q + temp_pj);
+            
+            printf("\t3 Task %d, i %d,j %d Dest %d, temp-dest %d RECVING\n",myrank,i,j,dest,temp_dest);
+            offset = (i+s-1)*n+j;
+            MPI_Ssend( A+offset, s, MPI_FLOAT, temp_dest, tag, MPI_COMM_WORLD);
+            printf("3 sent succesfully\n");
+          }
+
+          //~ /* Recv data from the lower processor, Send to the upper one.*/
+          //~ temp_pj = pj;
+          //~ 
+          //~ if( i+s > m-1 ){ //lowermost processor
+            //~ temp_pi = ((i-s)/s)%q ;
+            //~ temp_dest = (temp_pi*q + temp_pj);
+//~ 
+            //~ printf("\t4 Task %d, i %d,j %d Dest %d, temp-dest %d RECVING\n",myrank,i,j,dest,temp_dest);
+            //~ offset = i*n+j;
+            //~ tag = COMPUTE;
+            //~ MPI_Ssend( A+offset, s, MPI_FLOAT, temp_dest , tag, MPI_COMM_WORLD);
+            //~ printf(" 4 recv succesfully\n");
+          //~ }
+          //~ else if( i-s < 0 ){ // uppermost processor
+            //~ temp_pi = ((i+s)/s) % q ;
+            //~ temp_dest = (temp_pi*q + temp_pj);
+            //~ printf("\t1 Task %d, i %d,j %d Dest %d, temp-dest %d SENDING\n",myrank,i,j,dest,temp_dest);
+            //~ offset = (i+s)*n+j;
+            //~ MPI_Recv( A+offset, s, MPI_FLOAT, temp_dest, tag, MPI_COMM_WORLD, &status);
+            //~ printf(" 1 sent succesfully\n");
+          //~ }
+          //~ else  {
+            //~ temp_pi = ((i+s)/s)%q ;
+            //~ temp_dest = (temp_pi*q + temp_pj);
+            //~ 
+            //~ printf("\t3 Task %d, i %d,j %d Dest %d, temp-dest %d RECVING\n",myrank,i,j,dest,temp_dest);
+            //~ offset = (i+s)*n+j;
+            //~ MPI_Ssend( A+offset, s, MPI_FLOAT, temp_dest, tag, MPI_COMM_WORLD);
+            //~ printf("3 sent succesfully\n");
+//~ 
+            //~ temp_pi = ((i-s)/s)%q ;
+            //~ temp_dest = (temp_pi*q + temp_pj);
+            //~ 
+            //~ printf("\t2 Task %d, i %d,j %d Dest %d, temp-dest %d RECVING\n",myrank,i,j,dest,temp_dest);
+            //~ offset = (i)*n+j;
+            //~ MPI_Recv( A+offset, s, MPI_FLOAT, temp_dest , tag, MPI_COMM_WORLD, &status );
+            //~ printf("2 recv succesfully\n");            
+          //~ }
+        }
+      }
+    }
   }
+    /*Perform the  computation here.*/
     
 /* TODO: Remove this before submitting.*/
 /* Uncomment to see the block cyclic distribution of the matrix.*/
-  for (int i=0; i<nprocs; i++)
+  for ( i=0; i<nprocs; i++)
     {
         if (i == myrank) {
             std::cout << "Task " << myrank << std::endl ;
@@ -237,79 +344,7 @@ int main( int argc, char *argv[]){
       }
     }
   }
-  
-/* In case we want to see data after computation.
-  for (int i=0; i<nprocs; i++) {
-      if (i == myrank) {
-          std::cout << "Task " << myrank << std::endl ;
-          printf("\nMy Matrix A:- \n");
-          for (int j=0; j<m; j++) {
-              printf("\t| ");
-              for (int k=0; k<n; k++)
-                  printf("%.2f ", A[j*n+k]);
-              printf("|\n");
-            }
-            printf("\n");
-      }
-      MPI_Barrier(MPI_COMM_WORLD);
-  } 
-*/
-
-//~ <<<<<<< HEAD
-  //~ /*Perform l iterations of averaging*/
-//~ 
-  //~ /*
-   //~ * Adding some testing computation here
-   //~ */
-  //~ while( (l--)>0 ){
-    //~ if(myrank == 0)
-      //~ printf("Iteration number %d\n",l+1);
-    //~ for (int i = 0; i < n; i+=s) {
-        //~ for (int j = 0; j < m; j+=s) {
-            //~ pi = (i/s)%p ; // Row number inside the processors grid.
-            //~ pj = (j/s)%q ; // Coulmn number inside the processors grid.
-            //~ dest = (pi*q + pj) ; // Rank of the processor where the data belongs.
-//~ 
-            //~ /*If this is my data, I'll do the computation*/
-            //~ if (myrank != dest)
-                //~ continue;
-            //~ for (int k = i; k < i + s; k++) {
-                //~ assert(myrank == dest);
-                //~ for (int kiter = j; kiter < j + s; kiter ++) {
-                    //~ A[k*n + kiter] = pow(2, myrank);  
-                //~ }
-            //~ }
-           //~ 
-//~ 
-        //~ }
-//~
-//~ 
-  //~ /*                 
-   //~ * We need to gather data to master from all the worker threads.
-   //~ */
-  //~ for (int i = 0; i < n; i+=s) {
-      //~ for (int j = 0; j < m; j+=s) {
-          //~ pi = (i/s) % p; 
-          //~ pj = (j/s) % q; 
-          //~ owner = (pi*q + pj);
-          //~ // If I have this block and I'm not the master(All Hail Master!), 
-          //~ // this I will be sending this to master.
-          //~ if (myrank == owner && myrank != 0)
-              //~ for (int k = i; k < i + s; k++) {
-                //~ offset = k*n+j;
-                //~ MPI_Send( A+offset, s, MPI_FLOAT, 0, tag, MPI_COMM_WORLD);
-              //~ }
-//~ 
-          //~ /**** Master thread will gather all the data *****/
-          //~ if (myrank == 0 && myrank != owner)
-              //~ for (int k = i; k < i + s; k++) {
-                //~ offset = k*n + j;
-                //~ MPI_Recv( A+offset, s, MPI_FLOAT, owner , tag, MPI_COMM_WORLD, &status);  
-              //~ }
-      //~ }   
-  //~ }
-  
-  
+    
    /* Printing the result and closing */
   if(myrank == 0){
     outputMatrix(outfile,A,m,n);
