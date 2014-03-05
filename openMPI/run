@@ -16,10 +16,10 @@ b=0.2
 c=0.2
 d=0.2
 e=0.2
-ARGS="$infile $outfile $m $n $p $q $s $l $a $b $c $d $e" 
+ARGS=${ARGS:-"$infile $outfile $m $n $p $q $s $l $a $b $c $d $e"}
 
 #Name of the executable.
-EXEC=bin/mpi-average
+EXEC=${EXEC:-'bin/mpi-average'}
 CMD=mpiexec
 HOSTS=$(($p*$q))
 
