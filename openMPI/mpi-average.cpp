@@ -282,7 +282,7 @@ int main( int argc, char *argv[]){
            //~ 
 //~ 
         //~ }
-//~ =======
+//~
 //~ 
   //~ /*                 
    //~ * We need to gather data to master from all the worker threads.
