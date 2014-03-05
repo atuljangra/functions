@@ -28,26 +28,31 @@ function run
   $ECHO "Executing the program on the file - \"example\""
   $ECHO "Compiling the program, Just in case"
   make
-  $ECHO "Executing the program"
-  $ECHO "Arguments - "
-  $ECHO "\tinfile=$infile"
-  $ECHO "\toutfile=$outfile"
-  $ECHO "\tm=$m"
-  $ECHO "\tn=$n"
-  $ECHO "\tp=$p"
-  $ECHO "\tq=$q"
-  $ECHO "\ts=$s"
-  $ECHO "\tl=$l"
-  $ECHO "\ta=$a"
-  $ECHO "\tb=$b"
-  $ECHO "\tc=$c"
-  $ECHO "\td=$c"
-  $ECHO "\te=$e"
-  $ECHO "$CMD -n $HOSTS $EXEC $ARGS"
-  $CMD -n $HOSTS $EXEC $ARGS
-  $ECHO -e "\nValue returned by the program - $?"
-  $ECHO "x-x-x-x-x-x-x-x-x-x-x-x-x-x-x-x-x"
-  $ECHO "done"
+  if [ "$?" -ne "0" ] 
+  then  
+    $ECHO "Problems encountered while compiling"
+  else
+    $ECHO "Executing the program"
+    $ECHO "Arguments - "
+    $ECHO "\tinfile=$infile"
+    $ECHO "\toutfile=$outfile"
+    $ECHO "\tm=$m"
+    $ECHO "\tn=$n"
+    $ECHO "\tp=$p"
+    $ECHO "\tq=$q"
+    $ECHO "\ts=$s"
+    $ECHO "\tl=$l"
+    $ECHO "\ta=$a"
+    $ECHO "\tb=$b"
+    $ECHO "\tc=$c"
+    $ECHO "\td=$c"
+    $ECHO "\te=$e"
+    $ECHO "$CMD -n $HOSTS $EXEC $ARGS"
+    $CMD -n $HOSTS $EXEC $ARGS
+    $ECHO -e "\nValue returned by the program - $?"
+    $ECHO "x-x-x-x-x-x-x-x-x-x-x-x-x-x-x-x-x"
+    $ECHO "done"
+  fi
 }
 
 run
