@@ -1,0 +1,53 @@
+#!/bin/bash
+
+ECHO='echo -e'
+
+#Specify the arguments here
+infile=example
+outfile=output
+m=6
+n=6
+p=2
+q=2
+s=2
+l=1
+a=0.2
+b=0.2
+c=0.2
+d=0.2
+e=0.2
+ARGS="$infile $outfile $m $n $p $q $s $l $a $b $c $d $e" 
+
+#Name of the executable.
+EXEC=bin/mpi-average
+CMD=mpiexec
+HOSTS=$(($p*$q))
+
+function run
+{
+  $ECHO "Executing the program on the file - \"example\""
+  $ECHO "Compiling the program, Just in case"
+  make
+  $ECHO "Executing the program"
+  $ECHO "Arguments - "
+  $ECHO "\tinfile=$infile"
+  $ECHO "\toutfile=$outfile"
+  $ECHO "\tm=$m"
+  $ECHO "\tn=$n"
+  $ECHO "\tp=$p"
+  $ECHO "\tq=$q"
+  $ECHO "\ts=$s"
+  $ECHO "\tl=$l"
+  $ECHO "\ta=$a"
+  $ECHO "\tb=$b"
+  $ECHO "\tc=$c"
+  $ECHO "\td=$c"
+  $ECHO "\te=$e"
+  $ECHO "$CMD -n $HOSTS $EXEC $ARGS"
+  $CMD -n $HOSTS $EXEC $ARGS
+  $ECHO -e "\nValue returned by the program - $?"
+  $ECHO "x-x-x-x-x-x-x-x-x-x-x-x-x-x-x-x-x"
+  $ECHO "done"
+}
+
+run
