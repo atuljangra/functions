@@ -10,6 +10,7 @@
 #include <vector>
 #include <mpi.h>
 #include <math.h>
+#include <unordered_map>
 
 #define N_ARGS 14 // Number of arguments required by the program.
 #define FAILURE 1
@@ -20,9 +21,19 @@
    used while sending the data from one to another.*/
 #define DISTRIBUTE 1
 #define COLLECT 2
-
+using namespace std;
 void readMatrix(FILE* infile, double *A, int m, int n);
 void outputMatrix(FILE* outfile, double *A, int m, int n);
+
+int returnHashKey(int i, int j) {
+  return (i*3037 + j*4973);
+}
+
+struct data {
+  int i;
+  int j;
+  double value;
+};
 
 int main( int argc, char *argv[]){
 
@@ -297,11 +308,13 @@ int main( int argc, char *argv[]){
     /*Perform the  computation here.*/
 
 
-    // TODO This is really bad.
-    double * APrev;
-    APrev = (double *)calloc(m*n, sizeof(double));
-    memcpy(APrev, A, m*n*sizeof(double));
+    unordered_map <int, data> values;
+    /*
+     * Insert all changes values into the hash table and after carrying out
+     * all the computation, copy values from hash table to the array.
+     */ 
     double numer;
+    int key;
     double denom;
     for (int iter = 0; iter < m; iter++) {
       for (int jter = 0; jter < n; jter++) {
@@ -309,18 +322,29 @@ int main( int argc, char *argv[]){
         pj = (jter/s) % q ; // Coulmn number inside the processors grid.
         int my_owner = (pi*q + pj) ; // Rank of the processor where the data belongs.
         if (my_owner == myrank) {
-            numer= c*APrev[iter*n + jter];
+            numer= c*A[iter*n + jter];
             denom= c;
-            numer+= (iter > 0) ? a*APrev[(iter-1)*n + jter] : 0;
+            numer+= (iter > 0) ? a*A[(iter-1)*n + jter] : 0;
             denom+= (iter > 0)? a : 0;
-            numer+= (iter + 1< m) ? e*APrev[(iter+1)*n + jter] : 0;
-            denom+= (iter + 1< m) ? e : 0;
-            numer+= (jter > 0) ? b*APrev[iter*n + jter-1] : 0;
+            numer+= (iter + 1 < m) ? e*A[(iter+1)*n + jter] : 0;
+            denom+= (iter + 1 < m) ? e : 0;
+            numer+= (jter > 0) ? b*A[iter*n + jter-1] : 0;
             denom+= (jter > 0) ? b : 0;
-            numer+= (jter + 1 < n) ? d*APrev[(iter)*n + jter + 1 ] : 0;
+            numer+= (jter + 1 < n) ? d*A[(iter)*n + jter + 1 ] : 0;
             denom+= (jter + 1 < n) ?d : 0;
-            // if(myrank == 0 && iter == 5 && jter == 5)
-            A[iter*n + jter] = numer/denom;
+            key = returnHashKey(iter, jter);
+            //~ cout << "HASH: inserting " << key << " " <<
+            //~ " " << iter << " " << jter << " " << numer/denom << endl;
+            if (values.find(key) != values.end()) {
+              cout << "HASH: PROBLEM\n";
+              exit(-1);
+            }
+            data * newData = new data;
+            newData -> i = iter;
+            newData -> j = jter;
+            newData -> value = numer/denom;
+            values[key] = *newData;
+//~             A[iter*n + jter] = numer/denom;
         }
         else {
           // Debug
@@ -328,7 +352,21 @@ int main( int argc, char *argv[]){
       }
     }
 
+    double valueToPut;
+    int iter;
+    int jter;
+    for (auto it = values.begin(); it != values.end(); it++) {
+        iter = it -> second.i;
+        jter = it -> second.j;
+        valueToPut = it -> second.value;
+        //~ cout << "HASH: Adding " << " " <<
+            //~ " " << iter << " " << jter << " " <<valueToPut << endl;
+        A[iter*n + jter] = valueToPut;
+    }
 
+    // Erase the hashmap.
+    values.clear();
+    assert(values.empty());
     
     
 /* TODO: Remove this before submitting.*/
@@ -426,7 +464,7 @@ void outputMatrix(FILE* outfile, double *A, int m, int n){
   
   for(i=0; i<m; i++){
     for(j=0; j<n; j++){
-      fprintf(outfile,"%f",A[i*n+j]);
+      fprintf(outfile,"%.2f",A[i*n+j]);
       if(j<n-1)
         fprintf(outfile," ");
     }

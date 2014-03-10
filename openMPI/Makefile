@@ -3,7 +3,7 @@ RM := rm -rf
 MKDIR := mkdir -p
 MV := mv
 
-CFLAGS := -O3 -c
+CFLAGS := -O3 -c -std=c++11
 LINK := -o
 
 SRC=.
