@@ -295,10 +295,45 @@ int main( int argc, char *argv[]){
       //~ }
     //~ }
     /*Perform the  computation here.*/
+
+
+    // TODO This is really bad.
+    double * APrev;
+    APrev = (double *)calloc(m*n, sizeof(double));
+    memcpy(APrev, A, m*n*sizeof(double));
+    double numer;
+    double denom;
+    for (int iter = 0; iter < m; iter++) {
+      for (int jter = 0; jter < n; jter++) {
+        pi = (iter/s) % p ; // Row number inside the processors grid.
+        pj = (jter/s) % q ; // Coulmn number inside the processors grid.
+        int my_owner = (pi*q + pj) ; // Rank of the processor where the data belongs.
+        if (my_owner == myrank) {
+            numer= c*APrev[iter*n + jter];
+            denom= c;
+            numer+= (iter > 0) ? a*APrev[(iter-1)*n + jter] : 0;
+            denom+= (iter > 0)? a : 0;
+            numer+= (iter + 1< m) ? e*APrev[(iter+1)*n + jter] : 0;
+            denom+= (iter + 1< m) ? e : 0;
+            numer+= (jter > 0) ? b*APrev[iter*n + jter-1] : 0;
+            denom+= (jter > 0) ? b : 0;
+            numer+= (jter + 1 < n) ? d*APrev[(iter)*n + jter + 1 ] : 0;
+            denom+= (jter + 1 < n) ?d : 0;
+            // if(myrank == 0 && iter == 5 && jter == 5)
+            A[iter*n + jter] = numer/denom;
+        }
+        else {
+          // Debug
+        }
+      }
+    }
+
+
+    
     
 /* TODO: Remove this before submitting.*/
 /* Uncomment to see the block cyclic distribution of the matrix.*/
-  for ( i=0; i<nprocs; i++)
+  for (i=0; i<nprocs; i++)
     {
         if (i == myrank) {
             std::cout << "Task " << myrank << std::endl ;
